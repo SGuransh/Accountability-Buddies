@@ -5,6 +5,7 @@ import {
   createEvent as createEventApi,
   createHabit as createHabitApi,
   createTask as createTaskApi,
+  deleteHabit as deleteHabitApi,
   fetchDashboard,
   moveTask as moveTaskApi,
   updateHabit as updateHabitApi,
@@ -21,15 +22,16 @@ import {
   ChevronDown,
   Circle,
   Flame,
-  LayoutDashboard,
-  ListChecks,
   LogOut,
   Menu,
+  Moon,
   MoreHorizontal,
   Plus,
   Settings2,
   Sparkles,
+  Sun,
   Target,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -114,7 +116,9 @@ export default function Page() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [weeklyCompletion, setWeeklyCompletion] = useState(0);
   const [previousWeekCompletion, setPreviousWeekCompletion] = useState(0);
-  const [activeNav, setActiveNav] = useState("Overview");
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [personalBest, setPersonalBest] = useState(0);
+  const [completedDates, setCompletedDates] = useState<string[]>([]);
   const [viewMonth, setViewMonth] = useState(() => {
     const currentDate = new Date();
     return new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -142,6 +146,17 @@ export default function Page() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("there");
   const [initials, setInitials] = useState("DB");
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("daymark-theme");
+    setDarkMode(savedTheme === "dark");
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    window.localStorage.setItem("daymark-theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   const logOut = async () => {
     await getSupabaseClient().auth.signOut();
@@ -150,12 +165,11 @@ export default function Page() {
 
   useEffect(() => {
     let cancelled = false;
-    const loadUser = async () => {
+    const loadDashboard = async () => {
       try {
-        const { data } = await getSupabaseClient().auth.getUser();
-        if (cancelled || !data.user) return;
-        const metadata = data.user.user_metadata as { full_name?: string };
-        const name = metadata.full_name?.trim() || data.user.email?.split("@")[0] || "there";
+        const dashboard = await fetchDashboard();
+        if (cancelled) return;
+        const name = dashboard.display_name.trim() || "there";
         setDisplayName(name);
         setInitials(
           name
@@ -165,27 +179,14 @@ export default function Page() {
             .slice(0, 2)
             .toUpperCase(),
         );
-      } catch {
-        // Middleware already handles unauthenticated access.
-      }
-    };
-    loadUser();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadDashboard = async () => {
-      try {
-        const dashboard = await fetchDashboard();
-        if (cancelled) return;
         setHabits(dashboard.habits);
         setTasks(dashboard.tasks);
         setEvents(dashboard.events);
         setWeeklyCompletion(dashboard.weekly_completion);
         setPreviousWeekCompletion(dashboard.previous_week_completion);
+        setCurrentStreak(dashboard.current_streak);
+        setPersonalBest(dashboard.personal_best);
+        setCompletedDates(dashboard.completed_dates);
       } catch (error) {
         if (cancelled) return;
         setApiError(
@@ -201,7 +202,6 @@ export default function Page() {
     };
   }, []);
   const completed = habits.filter((habit) => habit.done).length;
-  const totalStreak = habits.reduce((sum, habit) => sum + habit.streak, 0);
   const currentDate = new Date();
   const monthLabel = formatMonthLabel(viewMonth);
   const calendarDays = getCalendarDays(viewMonth);
@@ -215,6 +215,9 @@ export default function Page() {
       const dashboard = await fetchDashboard();
       setWeeklyCompletion(dashboard.weekly_completion);
       setPreviousWeekCompletion(dashboard.previous_week_completion);
+      setCurrentStreak(dashboard.current_streak);
+      setPersonalBest(dashboard.personal_best);
+      setCompletedDates(dashboard.completed_dates);
       setApiError(null);
     } catch (error) {
       setApiError(
@@ -230,7 +233,13 @@ export default function Page() {
         icon: newHabitIcon,
         color: newHabitColor,
       });
-      setHabits((current) => [...current, created]);
+      const dashboard = await fetchDashboard();
+      setHabits(dashboard.habits);
+      setWeeklyCompletion(dashboard.weekly_completion);
+      setPreviousWeekCompletion(dashboard.previous_week_completion);
+      setCurrentStreak(dashboard.current_streak);
+      setPersonalBest(dashboard.personal_best);
+      setCompletedDates(dashboard.completed_dates);
       setApiError(null);
       setNewHabit("");
       setNewHabitIcon(habitIconOptions[0]);
@@ -240,6 +249,22 @@ export default function Page() {
       setApiError(
         error instanceof Error ? error.message : "Unable to create habit.",
       );
+    }
+  };
+  const deleteHabit = async (id: number) => {
+    if (!window.confirm("Delete this habit and its completion history?")) return;
+    try {
+      await deleteHabitApi(id);
+      const dashboard = await fetchDashboard();
+      setHabits(dashboard.habits);
+      setWeeklyCompletion(dashboard.weekly_completion);
+      setPreviousWeekCompletion(dashboard.previous_week_completion);
+      setCurrentStreak(dashboard.current_streak);
+      setPersonalBest(dashboard.personal_best);
+      setCompletedDates(dashboard.completed_dates);
+      setApiError(null);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "Unable to delete habit.");
     }
   };
   const openEventForm = (date = selectedDate) => {
@@ -314,7 +339,7 @@ export default function Page() {
   const columns = ["To do", "In progress", "Done"];
 
   return (
-    <main className="min-h-screen bg-[#f7f8fa] text-[#18212b]">
+    <main className={`dashboard-shell min-h-screen bg-[#f7f8fa] text-[#18212b]${darkMode ? " dark-mode" : ""}`}>
       <div className="flex min-h-screen">
         <aside className="hidden w-[238px] shrink-0 border-r border-[#e6e9ee] bg-white px-5 py-7 lg:block">
           <div className="mb-12 flex items-center gap-2.5 px-2">
@@ -325,23 +350,6 @@ export default function Page() {
               daymark
             </span>
           </div>
-          <nav className="space-y-1" aria-label="Main navigation">
-            {[
-              ["Overview", LayoutDashboard],
-              ["Calendar", CalendarDays],
-              ["My habits", ListChecks],
-              ["Kanban board", Target],
-            ].map(([label, Icon]) => (
-              <button
-                key={label as string}
-                onClick={() => setActiveNav(label as string)}
-                className={`flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[13px] font-medium transition ${activeNav === label ? "bg-[#eaf9ef] text-[#237a43]" : "text-[#78818d] hover:bg-[#f4f6f8]"}`}
-              >
-                <Icon size={17} />
-                <span>{label as string}</span>
-              </button>
-            ))}
-          </nav>
           <div className="my-8 h-px bg-[#edf0f2]" />
           <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#a4acb5]">
             Workspace
@@ -354,24 +362,6 @@ export default function Page() {
               <Bell size={17} /> Notifications
             </button>
           </nav>
-          <div className="mt-auto hidden pt-24 lg:block">
-            <div className="rounded-2xl bg-[#f4f7f5] p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-[#65706a]">
-                  Weekly goal
-                </span>
-                <span className="text-[11px] font-bold text-[#2c8b4d]">
-                  72%
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#dce9df]">
-                <div className="h-full w-[72%] rounded-full bg-[#62c47d]" />
-              </div>
-              <p className="mt-3 text-[11px] leading-4 text-[#929c96]">
-                You're doing great. Keep your momentum.
-              </p>
-            </div>
-          </div>
         </aside>
 
         <section className="min-w-0 flex-1">
@@ -385,11 +375,20 @@ export default function Page() {
                   {formatHeaderDate(currentDate)}
                 </p>
                 <h1 className="mt-1 text-[21px] font-bold tracking-[-0.04em]">
-                  Good morning, {displayName} <span className="text-[#7f8a94]">—</span>
+                  Good morning, {displayName}
                 </h1>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDarkMode((current) => !current)}
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                className="flex size-9 items-center justify-center rounded-lg border border-[#e1e6e9] text-[#53616b] transition hover:bg-[#f4f6f8]"
+              >
+                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
               <button
                 type="button"
                 onClick={logOut}
@@ -424,8 +423,8 @@ export default function Page() {
               <Stat
                 icon={<Flame size={18} />}
                 label="Current streak"
-                value={`${habits.length ? Math.max(...habits.map((h) => h.streak)) : 0} days`}
-                note="personal best: 21"
+                value={`${currentStreak} days`}
+                note={`personal best: ${personalBest}`}
                 color="orange"
               />
               <Stat
@@ -546,10 +545,13 @@ export default function Page() {
                         <Flame size={14} fill="currentColor" /> {habit.streak}
                       </div>
                       <button
-                        aria-label="More options"
-                        className="ml-1 text-[#c1c8cd] opacity-0 transition group-hover:opacity-100"
+                        type="button"
+                        aria-label={`Delete ${habit.name}`}
+                        title="Delete habit"
+                        onClick={() => deleteHabit(habit.id)}
+                        className="ml-1 text-[#c1c8cd] opacity-0 transition group-hover:opacity-100 hover:text-[#b75b50]"
                       >
-                        <MoreHorizontal size={17} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   ))}
@@ -615,11 +617,8 @@ export default function Page() {
                     </button>
                   </div>
                 </div>
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3">
                   <span className="text-[13px] font-bold">{monthLabel}</span>
-                  <span className="rounded-full bg-[#edf9f0] px-2 py-1 text-[10px] font-bold text-[#43995c]">
-                    {totalStreak} total streak days
-                  </span>
                 </div>
                 <div className="grid grid-cols-7 gap-y-1 text-center">
                   {days.map((day) => (
@@ -632,9 +631,7 @@ export default function Page() {
                   ))}
                   {calendarDays.map(({ date, currentMonth }) => {
                     const dateKey = formatDateInput(date);
-                    const marked =
-                      currentMonth &&
-                      events.some((event) => event.date === dateKey);
+                    const marked = currentMonth && completedDates.includes(dateKey);
                     const today = dateKey === formatDateInput(currentDate);
                     const selected = dateKey === selectedDate;
                     return (
@@ -913,10 +910,7 @@ export default function Page() {
                       </div>
                     ))}
                 </div>
-                <button
-                  onClick={() => setActiveNav("Calendar")}
-                  className="mt-3 w-full rounded-lg border border-dashed border-[#dfe6e1] py-2.5 text-[11px] font-semibold text-[#6ca27a] hover:bg-[#f7fbf8]"
-                >
+                <button className="mt-3 w-full rounded-lg border border-dashed border-[#dfe6e1] py-2.5 text-[11px] font-semibold text-[#6ca27a] hover:bg-[#f7fbf8]">
                   View full calendar
                 </button>
               </section>

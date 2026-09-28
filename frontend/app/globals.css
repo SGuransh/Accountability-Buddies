@@ -161,3 +161,59 @@
     @apply bg-background text-foreground;
   }
 }
+
+.dashboard-shell.dark-mode {
+  background-color: #101815;
+  color: #e6eee9;
+}
+
+.dashboard-shell.dark-mode [class~="bg-white"] {
+  background-color: #18231f;
+}
+
+.dashboard-shell.dark-mode [class~="bg-[#f7f8fa]"] {
+  background-color: #101815;
+}
+
+.dashboard-shell.dark-mode [class~="bg-[#f6f9f7]"] {
+  background-color: #1e2c26;
+}
+
+.dashboard-shell.dark-mode [class~="bg-[#f4f6f8]"]:hover {
+  background-color: #26362f;
+}
+
+.dashboard-shell.dark-mode [class~="border-[#e6e9ee]"],
+.dashboard-shell.dark-mode [class~="border-[#e5e9ed]"],
+.dashboard-shell.dark-mode [class~="border-[#e1e6e9]"],
+.dashboard-shell.dark-mode [class~="border-[#dfe5e1]"],
+.dashboard-shell.dark-mode [class~="border-[#edf0f2]"] {
+  border-color: #2d3d36;
+}
+
+.dashboard-shell.dark-mode [class~="text-[#18212b]"] {
+  color: #e6eee9;
+}
+
+.dashboard-shell.dark-mode [class~="text-[#53616b]"],
+.dashboard-shell.dark-mode [class~="text-[#697680]"],
+.dashboard-shell.dark-mode [class~="text-[#78818d]"] {
+  color: #aebdb5;
+}
+
+.dashboard-shell.dark-mode [class~="text-[#89939c]"],
+.dashboard-shell.dark-mode [class~="text-[#a0a8b1]"],
+.dashboard-shell.dark-mode [class~="text-[#a4acb5]"] {
+  color: #809188;
+}
+
+.dashboard-shell.dark-mode input,
+.dashboard-shell.dark-mode select {
+  background-color: #18231f;
+  color: #e6eee9;
+  border-color: #3b4d44;
+}
+
+.dashboard-shell.dark-mode input::placeholder {
+  color: #7f9187;
+}

@@ -27,11 +27,15 @@ export type ApiEvent = {
 }
 
 export type DashboardData = {
+  display_name: string
   habits: ApiHabit[]
   tasks: ApiTask[]
   events: ApiEvent[]
   weekly_completion: number
   previous_week_completion: number
+  current_streak: number
+  personal_best: number
+  completed_dates: string[]
 }
 
 export type CreateHabitInput = Pick<ApiHabit, 'name' | 'icon' | 'color'> & Partial<Pick<ApiHabit, 'frequency'>>
@@ -74,6 +78,10 @@ export async function fetchDashboard(): Promise<DashboardData> {
 
 export function createHabit(input: CreateHabitInput): Promise<ApiHabit> {
   return request<ApiHabit>('/api/habits', { method: 'POST', body: JSON.stringify({ ...input, frequency: input.frequency ?? 'daily' }) })
+}
+
+export function deleteHabit(id: number): Promise<{ status: string }> {
+  return request<{ status: string }>(`/api/habits/${id}`, { method: 'DELETE' })
 }
 
 export function updateHabit(id: number, done: boolean): Promise<ApiHabit> {

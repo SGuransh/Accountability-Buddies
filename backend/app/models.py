@@ -9,6 +9,15 @@ class Base(DeclarativeBase):
     pass
 
 
+class ProfileModel(Base):
+    __tablename__ = "profiles"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    display_name: Mapped[str | None] = mapped_column(String(160))
+    current_streak: Mapped[int] = mapped_column(Integer, default=0)
+    personal_best: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class HabitModel(Base):
     __tablename__ = "habits"
 
@@ -31,6 +40,13 @@ class HabitCompletionModel(Base):
     profile_id: Mapped[UUID] = mapped_column(Uuid, index=True)
     completion_date: Mapped[date] = mapped_column(Date, index=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class ProfileCompletedDayModel(Base):
+    __tablename__ = "profile_completed_days"
+
+    profile_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    completion_date: Mapped[date] = mapped_column(Date, primary_key=True)
 
 
 class TaskModel(Base):

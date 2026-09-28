@@ -68,8 +68,12 @@ class EventCreate(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    display_name: str
     habits: list[Habit]
     tasks: list[KanbanTask]
     events: list[EventItem]
     weekly_completion: float
     previous_week_completion: float
+    current_streak: int
+    personal_best: int
+    completed_dates: list[date]
