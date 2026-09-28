@@ -34,3 +34,9 @@ Current routes include:
 The API now uses SQLAlchemy persistence. By default it creates `backend/accountability.db` using SQLite, which is ignored by git. To use PostgreSQL or Supabase, set `DATABASE_URL` before starting the server, for example in `backend/.env`.
 
 The current tables are `habits`, `tasks`, and `events`. Tables are created automatically on startup and the initial development rows are seeded only when each table is empty.
+
+## Supabase migration
+
+The production schema and RLS policies are defined in `supabase/migrations/001_profile_owned_schema.sql`. Run that file in the Supabase SQL Editor after confirming the project connection. The migration has not been applied automatically because the current `DATABASE_URL` connection check fails.
+
+The FastAPI routes still use the local development models until Supabase authentication is enabled and the backend receives a valid `SUPABASE_JWKS_URL`. The next endpoint migration will derive `profile_id` from the verified bearer token rather than accepting it from the frontend.

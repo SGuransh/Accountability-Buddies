@@ -1,3 +1,5 @@
+import { getSupabaseClient } from '@/lib/supabase'
+
 export type ApiHabit = {
   id: number
   name: string
@@ -5,7 +7,7 @@ export type ApiHabit = {
   color: string
   streak: number
   done: boolean
-  frequency: 'daily'
+  frequency: 'daily' | 'weekly' | 'monthly'
 }
 
 export type ApiTask = {
@@ -28,20 +30,41 @@ export type DashboardData = {
   habits: ApiHabit[]
   tasks: ApiTask[]
   events: ApiEvent[]
+  weekly_completion: number
+  previous_week_completion: number
 }
 
-export type CreateHabitInput = Pick<ApiHabit, 'name' | 'icon' | 'color'>
+export type CreateHabitInput = Pick<ApiHabit, 'name' | 'icon' | 'color'> & Partial<Pick<ApiHabit, 'frequency'>>
 export type CreateTaskInput = Pick<ApiTask, 'title' | 'tag' | 'priority' | 'column'>
 export type CreateEventInput = Pick<ApiEvent, 'title' | 'date' | 'time' | 'color'>
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const supabase = getSupabaseClient()
+  const { data } = await supabase.auth.getSession()
+  const accessToken = data.session?.access_token
+
+  if (!accessToken) throw new Error('Please sign in before using the dashboard.')
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      ...options?.headers,
+    },
   })
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`)
+  if (!response.ok) {
+    let detail = `API request failed: ${response.status}`
+    try {
+      const errorBody = (await response.json()) as { detail?: string }
+      if (errorBody.detail) detail = errorBody.detail
+    } catch {
+      // Keep the status-based message when the response is not JSON.
+    }
+    throw new Error(detail)
+  }
   return response.json() as Promise<T>
 }
 
@@ -50,7 +73,7 @@ export async function fetchDashboard(): Promise<DashboardData> {
 }
 
 export function createHabit(input: CreateHabitInput): Promise<ApiHabit> {
-  return request<ApiHabit>('/api/habits', { method: 'POST', body: JSON.stringify({ ...input, frequency: 'daily' }) })
+  return request<ApiHabit>('/api/habits', { method: 'POST', body: JSON.stringify({ ...input, frequency: input.frequency ?? 'daily' }) })
 }
 
 export function updateHabit(id: number, done: boolean): Promise<ApiHabit> {

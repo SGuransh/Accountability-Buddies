@@ -2,10 +2,13 @@ import os
 from collections.abc import Generator
 from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from .models import Base
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 DEFAULT_DATABASE_URL = f"sqlite:///{Path(__file__).resolve().parents[1] / 'accountability.db'}"
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
