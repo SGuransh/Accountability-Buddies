@@ -3,4 +3,5 @@ __pycache__
 .pytest_cache
 .env
 *.db
-.env.example
+.git
+.gitignore
