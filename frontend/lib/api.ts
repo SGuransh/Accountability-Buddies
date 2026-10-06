@@ -41,8 +41,6 @@ export type CreateHabitInput = Pick<ApiHabit, 'name' | 'icon' | 'color'> & Parti
 export type CreateTaskInput = Pick<ApiTask, 'title' | 'tag' | 'priority' | 'column'>
 export type CreateEventInput = Pick<ApiEvent, 'title' | 'date' | 'time' | 'color'>
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const supabase = getSupabaseClient()
   const { data } = await supabase.auth.getSession()
@@ -50,7 +48,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!accessToken) throw new Error('Please sign in before using the dashboard.')
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
