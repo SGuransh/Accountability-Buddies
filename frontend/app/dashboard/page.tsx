@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  clearDoneTasks as clearDoneTasksApi,
   createEvent as createEventApi,
   createHabit as createHabitApi,
   createTask as createTaskApi,
@@ -40,7 +41,6 @@ type Habit = {
   name: string;
   icon: string;
   color: string;
-  streak: number;
   done: boolean;
 };
 type KanbanTask = {
@@ -336,6 +336,19 @@ export default function Page() {
     }
     setDraggedTaskId(null);
   };
+  const clearDoneTasks = async () => {
+    const doneCount = tasks.filter((task) => task.column === "Done").length;
+    if (!doneCount || !window.confirm(`Clear ${doneCount} completed task${doneCount === 1 ? "" : "s"}?`)) return;
+    try {
+      await clearDoneTasksApi();
+      setTasks((current) => current.filter((task) => task.column !== "Done"));
+      setApiError(null);
+    } catch (error) {
+      setApiError(
+        error instanceof Error ? error.message : "Unable to clear completed tasks.",
+      );
+    }
+  };
   const columns = ["To do", "In progress", "Done"];
 
   return (
@@ -537,12 +550,6 @@ export default function Page() {
                         >
                           {habit.name}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#a1aab1]">
-                          Daily · {habit.streak} day streak
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-[#b38a45]">
-                        <Flame size={14} fill="currentColor" /> {habit.streak}
                       </div>
                       <button
                         type="button"
@@ -677,12 +684,23 @@ export default function Page() {
                       Move tasks forward, one step at a time.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setShowTaskInput(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#24322d] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#31443a]"
-                  >
-                    <Plus size={14} /> New task
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowTaskInput(true)}
+                      className="flex items-center gap-1.5 rounded-lg bg-[#24322d] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#31443a]"
+                    >
+                      <Plus size={14} /> New task
+                    </button>
+                    {tasks.some((task) => task.column === "Done") && (
+                      <button
+                        type="button"
+                        onClick={clearDoneTasks}
+                        className="flex items-center gap-1.5 rounded-lg border border-[#e1e6e9] px-3 py-2 text-[12px] font-semibold text-[#8d6259] hover:bg-[#fff7f5]"
+                      >
+                        <Trash2 size={14} /> Clear done
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {showTaskInput && (
                   <div className="mb-4 space-y-3 rounded-xl bg-[#f6f9f7] p-3">

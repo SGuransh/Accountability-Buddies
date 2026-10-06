@@ -5,7 +5,6 @@ export type ApiHabit = {
   name: string
   icon: string
   color: string
-  streak: number
   done: boolean
   frequency: 'daily' | 'weekly' | 'monthly'
 }
@@ -94,6 +93,10 @@ export function createTask(input: CreateTaskInput): Promise<ApiTask> {
 
 export function moveTask(id: number, column: ApiTask['column']): Promise<ApiTask> {
   return request<ApiTask>(`/api/tasks/${id}/move`, { method: 'PATCH', body: JSON.stringify({ column }) })
+}
+
+export function clearDoneTasks(): Promise<{ deleted: number }> {
+  return request<{ deleted: number }>('/api/tasks/done', { method: 'DELETE' })
 }
 
 export function createEvent(input: CreateEventInput): Promise<ApiEvent> {
