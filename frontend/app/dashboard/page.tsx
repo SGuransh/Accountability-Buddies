@@ -388,7 +388,7 @@ export default function Page() {
                   {formatHeaderDate(currentDate)}
                 </p>
                 <h1 className="mt-1 text-[21px] font-bold tracking-[-0.04em]">
-                  Good morning, {displayName}
+                  Mudd Gorningg, {displayName}
                 </h1>
               </div>
             </div>
